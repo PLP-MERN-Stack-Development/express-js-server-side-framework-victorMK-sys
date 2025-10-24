@@ -4,6 +4,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
+const router = require('./routes');
+const { eventLogger, auth, validation } = require('./middleware');
 
 // Initialize Express app
 const app = express();
@@ -11,6 +13,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware setup
 app.use(bodyParser.json());
+app.use(express.json());
 
 // Sample in-memory products database
 let products = [
@@ -40,21 +43,38 @@ let products = [
   }
 ];
 
+const login = {
+  admin: {
+    login_id: '1010',
+    login_name: "admin",
+    methods: ['GET', 'POST', 'PUT', 'DELETE']
+  },
+  user: 
+  {
+    login_id: '1222',
+    login_name: "user",
+    methods: ['GET']
+  }
+};
+
+// Custom middleware to log request method, url, and timestamp
+app.use('/', (req, res, next) => {
+  auth(req);
+  eventLogger(req);
+  
+  // check if the request body has an authorization key and pass it to the headers
+  console.log(validation(req, login)[1]);
+  
+  // Call the next() function for the routes
+  next();
+});
+
+// Routes(GET, POST, PUT, DELETE)
+app.use('/api/products', router);
+
 // Root route
 app.get('/', (req, res) => {
   res.send('Welcome to the Product API! Go to /api/products to see all products.');
-});
-
-// TODO: Implement the following routes:
-// GET /api/products - Get all products
-// GET /api/products/:id - Get a specific product
-// POST /api/products - Create a new product
-// PUT /api/products/:id - Update a product
-// DELETE /api/products/:id - Delete a product
-
-// Example route implementation for GET /api/products
-app.get('/api/products', (req, res) => {
-  res.json(products);
 });
 
 // TODO: Implement custom middleware for:
@@ -68,4 +88,4 @@ app.listen(PORT, () => {
 });
 
 // Export the app for testing purposes
-module.exports = app; 
+module.exports = {app, products};
